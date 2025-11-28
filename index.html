@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas de Boletos</title>
+    <style>
+        /* Estilos CSS BÁSICOS */
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f4f4f4;
+            margin-top: 50px;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .asientos-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 60px); /* 5 columnas */
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .asiento {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+            user-select: none; /* Evita que se seleccione el texto */
+        }
+        /* Colores según el estado del Backend */
+        .DISPONIBLE {
+            background-color: #4CAF50; /* Verde */
+            color: white;
+            border: 2px solid #38783a;
+        }
+        .RESERVADO {
+            background-color: #FFC107; /* Amarillo/Naranja */
+            color: #333;
+            cursor: not-allowed;
+            border: 2px solid #b38c00;
+        }
+        .VENDIDO {
+            background-color: #F44336; /* Rojo */
+            color: white;
+            cursor: not-allowed;
+            border: 2px solid #a03028;
+        }
+        .asiento:hover:not(.RESERVADO):not(.VENDIDO) {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.7);
+        }
+        .status-message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        /* Estilo para el mensaje de carga/comunicación */
+        .loading {
+            background-color: #ADD8E6; /* Azul claro */
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Selección de Boletos (API Flask)</h2>
+        <div class="asientos-grid" id="asientos-container">
+            <!-- Los asientos se inyectarán aquí con JavaScript -->
+        </div>
+        <div class="status-message" id="message-display">
+            Haga clic en un asiento disponible para reservar.
+        </div>
+
+        <!-- NUEVO: Área de la Reserva con Contador y Botón de Compra -->
+        <div id="reserva-actual" style="margin-top: 20px; padding: 15px; border: 1px dashed #ccc; border-radius: 5px; text-align: center; display: none;">
+            <p>Asiento reservado: <strong id="asiento-reservado-nombre"></strong>. <span id="contador"></span></p>
+            <button id="btn-comprar" onclick="finalizarCompra()" style="background-color: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
+                Finalizar Compra
+            </button>
+        </div>
+        <!-- FIN NUEVO -->
+
+        <button onclick="cargarEstadoBoletos()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
+            Recargar Estado
+        </button>
+    </div>
+
+    <script>
+        // --- 1. CONFIGURACIÓN Y VARIABLES GLOBALES ---
+        const API_BASE_URL = 'http://127.0.0.1:5000/api';
+        const asientosContainer = document.getElementById('asientos-container');
+        const messageDisplay = document.getElementById('message-display');
+        
+        // NUEVAS VARIABLES
+        const reservaActualDiv = document.getElementById('reserva-actual');
+        const asientoReservadoNombre = document.getElementById('asiento-reservado-nombre');
+        const contadorDisplay = document.getElementById('contador');
+        let intervaloContador = null; // Para controlar el timer de la reserva
+
+        /**
+         * Muestra un mensaje al usuario en la interfaz.
+         * @param {string} message - El texto a mostrar.
+         * @param {string} type - Clase CSS para el estilo (ej: 'DISPONIBLE', 'RESERVADO', 'VENDIDO', 'loading').
+         */
+        function mostrarMensaje(message, type = 'DISPONIBLE') {
+            messageDisplay.textContent = message;
+            messageDisplay.className = 'status-message ' + type;
+        }
+
+        // --- 2. LÓGICA DEL CONTADOR ---
+
+        /**
+         * Inicia una cuenta regresiva visual para la reserva.
+         * @param {number} segundos - Tiempo de la reserva en segundos.
+         * @param {string} asientoNombre - Nombre del asiento reservado.
+         */
+        function iniciarContador(segundos, asientoNombre) {
+            // Detiene cualquier contador previo
+            if (intervaloContador) {
+                clearInterval(intervaloContador);
+            }
+            let tiempoRestante = segundos;
+            
+            intervaloContador = setInterval(() => {
+                if (tiempoRestante <= 0) {
+                    clearInterval(intervaloContador);
+                    reservaActualDiv.style.display = 'none';
+                    mostrarMensaje(`Tu reserva por el asiento ${asientoNombre} expiró. El asiento está liberado.`, 'VENDIDO');
+                    cargarEstadoBoletos(); // Recarga para que el asiento vuelva a verde si nadie más lo reservó
+                } else {
+                    contadorDisplay.textContent = `Tiempo restante para comprar: ${tiempoRestante}s`;
+                    tiempoRestante--;
+                }
+            }, 1000);
+        }
+
+        // --- 3. CARGA Y DIBUJO DE BOLETOS ---
+        
+        async function cargarEstadoBoletos() {
+            mostrarMensaje("Cargando estado actual de los boletos...", 'loading');
+            // Asegura que el contador se detenga y la barra se oculte al recargar
+            if (intervaloContador) clearInterval(intervaloContador);
+            reservaActualDiv.style.display = 'none';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/boletos`);
+                const data = await response.json();
+                
+                dibujarAsientos(data);
+                mostrarMensaje("Estado de boletos cargado exitosamente. Selecciona tu asiento.", 'DISPONIBLE');
+
+            } catch (error) {
+                console.error('Error al cargar boletos:', error);
+                mostrarMensaje("ERROR: No se pudo conectar al servidor Flask. Asegúrese de que 'python app.py' esté corriendo.", 'VENDIDO');
+            }
+        }
+
+        function dibujarAsientos(boletos) {
+            asientosContainer.innerHTML = ''; // Limpia el contenedor
+            
+            boletos.forEach(boleto => {
+                const asientoDiv = document.createElement('div');
+                
+                asientoDiv.setAttribute('data-asiento', boleto.asiento);
+                
+                asientoDiv.className = `asiento ${boleto.estado}`;
+                asientoDiv.textContent = boleto.asiento;
+                
+                if (boleto.estado === 'DISPONIBLE') {
+                    asientoDiv.addEventListener('click', () => intentarReservar(boleto.asiento));
+                }
+                
+                asientosContainer.appendChild(asientoDiv);
+            });
+        }
+
+        // --- 4. LÓGICA DE RESERVA Y COMPRA ---
+
+        async function intentarReservar(asientoNombre) {
+            // Evita doble clic
+            if (intervaloContador) {
+                 mostrarMensaje('Ya tienes una reserva activa. Finaliza la compra o espera a que expire.', 'RESERVADO');
+                 return;
+            }
+            
+            mostrarMensaje(`Intentando reservar el asiento ${asientoNombre}...`, 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/reservar/${asientoNombre}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = response.status !== 204 && response.status !== 205 ? await response.json() : {};
+                
+                if (response.ok) {
+                    // Reserva exitosa (Código 200)
+                    
+                    // CORRECCIÓN CLAVE: Busca el SEGUNDO número que aparece en el mensaje.
+                    // Esto es necesario porque el mensaje del servidor es similar a: 'Asiento A1 reservado... Tienes 30 segundos...'
+                    const matches = data.message ? data.message.match(/\d+/g) : null;
+                    const tiempoReserva = (matches && matches.length > 1) ? matches[1] : '30';
+
+                    mostrarMensaje(`¡Reservado! Tienes ${tiempoReserva} segundos para comprar.`, 'RESERVADO');
+                    
+                    // Lógica de Interfaz: Muestra el asiento reservado y el contador
+                    asientoReservadoNombre.textContent = asientoNombre;
+                    reservaActualDiv.style.display = 'block';
+                    iniciarContador(parseInt(tiempoReserva), asientoNombre); // Inicia el contador
+                    
+                    // Actualiza el estado visual 
+                    const asientoElement = document.querySelector(`.asiento[data-asiento='${asientoNombre}']`);
+                    if (asientoElement) {
+                        asientoElement.className = `asiento RESERVADO`;
+                    }
+                    
+                } else if (response.status === 409) {
+                    // Conflicto (Código 409): Ya fue reservado o vendido
+                    mostrarMensaje(`ERROR: ${data.message} ¡Otro usuario lo reservó primero!`, 'VENDIDO');
+                    cargarEstadoBoletos(); 
+                } else {
+                    // Otros errores (404, 500)
+                    mostrarMensaje(`Error al reservar: ${data.message || 'Error desconocido del servidor.'}`, 'VENDIDO');
+                }
+            } catch (error) {
+                console.error('Error de red/lectura de JSON. Verificando estado...', error);
+                // Si hay error de comunicación, forzamos la recarga para mostrar el estado real.
+                cargarEstadoBoletos();
+                mostrarMensaje('Error de comunicación. Verificando estado real...', 'loading');
+            }
+        }
+        
+        // FUNCIÓN FINALIZAR COMPRA
+        async function finalizarCompra() {
+            const asientoNombre = asientoReservadoNombre.textContent;
+            if (!asientoNombre) return;
+
+            mostrarMensaje(`Procesando compra de ${asientoNombre}...`, 'loading');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/comprar/${asientoNombre}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const data = response.status !== 204 && response.status !== 205 ? await response.json() : {};
+
+                if (response.ok) {
+                    // Compra exitosa (Código 200)
+                    clearInterval(intervaloContador);
+                    reservaActualDiv.style.display = 'none';
+                    mostrarMensaje(`¡Compra Finalizada! Asiento ${asientoNombre} vendido.`, 'VENDIDO');
+                    cargarEstadoBoletos(); // Recarga para mostrar el asiento en Rojo (VENDIDO)
+                } else {
+                    mostrarMensaje(`Error al comprar: ${data.message || 'Error desconocido.'}`, 'VENDIDO');
+                    cargarEstadoBoletos(); // Recarga para ver el estado real
+                }
+            } catch (error) {
+                console.error('Error de red al comprar:', error);
+                mostrarMensaje('Error de conexión al intentar comprar.', 'VENDIDO');
+            }
+        }
+
+
+        // Inicia la carga de boletos al cargar la página
+        window.onload = cargarEstadoBoletos;
+    </script>
+</body>
+</html>
