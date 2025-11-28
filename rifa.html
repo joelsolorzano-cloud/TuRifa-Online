@@ -1,0 +1,1032 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Tablero de Rifa - ACCESO ADMINISTRADOR</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+            background-image: url('fondo.jpg'); 
+            background-size: cover; 
+            background-attachment: fixed;
+            background-position: center;
+            color: #333;
+        }
+        
+        #logo-rifa {
+            max-width: 400px; 
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            display: block;
+            margin: -10px auto 25px auto;
+        }
+
+        #contenido-administrador {
+            display: block; 
+        }
+
+        #contenedor-botones {
+            margin-bottom: 25px;
+            display: flex; 
+            justify-content: center;
+            gap: 15px; 
+        }
+        
+        .boton-accion {
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.3em;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        #boton-acceso-admin {
+            background-color: #6c757d; 
+            color: white;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            margin-bottom: 15px;
+            display: block; 
+            margin: 0 auto 15px auto;
+        }
+        #boton-acceso-admin:hover {
+            background-color: #5a6268;
+        }
+
+        #boton-sorteo {
+            background-color: #ffc107; 
+            color: #333;
+        }
+        #boton-sorteo:hover:not(:disabled) {
+            background-color: #e0a800; 
+        }
+        #boton-sorteo:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        /* Estilos para el nuevo botón de Reiniciar Ganadores (Azul) */
+        #boton-reiniciar-ganadores { 
+            background-color: #007bff; /* Azul primario */
+            color: white;
+        }
+        #boton-reiniciar-ganadores:hover:not(:disabled) {
+            background-color: #0056b3; 
+        }
+        #boton-reiniciar-ganadores:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #boton-reiniciar-boletos { 
+            background-color: #dc3545; 
+            color: white;
+        }
+        #boton-reiniciar-boletos:hover:not(:disabled) {
+            background-color: #c82333; 
+        }
+        #boton-reiniciar-boletos:disabled {
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        #resultado-sorteo {
+            font-size: 1.3em; 
+            font-weight: bold;
+            color: #007bff; 
+            margin-top: 20px;
+            padding: 15px;
+            border: 3px solid #007bff;
+            border-radius: 8px;
+            max-width: 650px;
+            margin: 20px auto;
+            background-color: rgba(255, 255, 255, 0.9);
+            text-align: left;
+        }
+        
+        #resultado-sorteo strong {
+            display: block;
+            margin: 8px 0;
+            padding-bottom: 5px;
+            border-bottom: 1px dashed #ccc;
+        }
+        #resultado-sorteo strong:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        /* -------------------------------------- */
+        /* --- ESTILOS PARA LOS RECUADROS FIJOS --- */
+        /* -------------------------------------- */
+        #contenedor-ganadores-fijos {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+
+        .display-ganador {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+            width: 45%;
+            text-align: left;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            line-height: 1.4;
+        }
+        
+        #display-ganador-1 {
+            border-left: 5px solid #ffc107; /* Color Primer Ganador */
+        }
+        #display-ganador-2 {
+            border-left: 5px solid #007bff; /* Color Segundo Ganador */
+        }
+        /* -------------------------------------- */
+        /* -------------------------------------- */
+
+
+        #contador {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+            margin: 25px auto 20px auto;
+            padding: 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            display: inline-block; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        #tablero {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr); 
+            gap: 10px; 
+            max-width: 1400px; 
+            margin: 20px auto;
+            padding: 10px;
+            background-color: rgba(173, 216, 230, 0.8);
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            position: relative; 
+        }
+        
+        .boleto {
+            padding: 0; 
+            border: none;
+            border-radius: 0;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em; 
+            
+            background-image: url('boletos.png'); 
+            background-size: cover; 
+            background-repeat: no-repeat;
+            background-position: center;
+            min-height: 63px; /* 🛑 AJUSTADO: 60px * 1.05 = 63px 🛑 */
+            aspect-ratio: 2 / 1; 
+            position: relative;
+            overflow: hidden; 
+        }
+        
+        .nombre-display {
+            position: absolute;
+            bottom: 5px; 
+            left: 0;
+            right: 0;
+            font-size: 0.6em; 
+            font-weight: bold;
+            color: #333;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-top: 1px solid #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+
+        .disponible .nombre-display {
+            display: none;
+        }
+        .ocupado .nombre-display {
+            display: block;
+        }
+
+        .numero-btn {
+            font-weight: bold;
+            font-size: 1.2em; /* 🛑 AJUSTE DE TAMAÑO DE FUENTE 🛑 */
+            cursor: pointer;
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); 
+            background-color: transparent; 
+            color: white; 
+            padding: 5px 10px;
+            line-height: 1.2;
+            width: fit-content;
+            z-index: 2; 
+        }
+        .numero-btn:hover {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.9); 
+        }
+        
+        .disponible {
+            filter: grayscale(0%); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* CLASE MODIFICADA PARA COLOR ROJO */
+        .ocupado {
+            filter: brightness(85%) hue-rotate(340deg) saturate(150%); 
+            box-shadow: 0 6px 12px rgba(255, 0, 0, 0.4); 
+            border: 3px solid #dc3545; 
+        }
+        .ocupado .numero-btn {
+            color: #fce38a; 
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+            cursor: default; 
+        }
+
+        .ruleta-flash {
+            transform: scale(1.05) rotate(2deg);
+            box-shadow: 0 0 15px 5px #00ff00 !important; 
+            filter: brightness(150%) hue-rotate(90deg) !important; 
+            transition: all 0.05s ease-in-out !important; 
+        }
+
+        .ganador {
+            transform: scale(1.1) rotate(-3deg); 
+            box-shadow: 0 0 20px 8px #ffc107 !important; 
+            filter: brightness(180%) saturate(150%) !important; 
+            border: 5px solid #ffc107; 
+        }
+
+        /* --- ESTILOS DEL MODAL (Ventana Pop-up) --- */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 100; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto; 
+            padding: 25px;
+            border: 1px solid #888;
+            width: 80%; 
+            max-width: 450px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            text-align: left;
+        }
+
+        .modal-content h3 {
+            text-align: center;
+            color: #007bff;
+            margin-top: 0;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+
+        .modal-content input[type="text"] {
+            width: 95%;
+            padding: 10px;
+            margin: 8px 0 15px 0;
+            display: inline-block;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 1em;
+        }
+
+        .modal-footer {
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .modal-footer button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        #modal-btn-aceptar {
+            background-color: #28a745;
+            color: white;
+        }
+        #modal-btn-cancelar {
+            background-color: #f44336;
+            color: white;
+        }
+        /* --- FIN ESTILOS MODAL --- */
+        
+        #countdown-timer {
+            margin-top: 40px;
+            padding: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: rgba(255, 255, 255, 0.9);
+            color: #28a745; 
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            max-width: 500px;
+            margin: 40px auto 10px auto;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <audio id="sound-tic" src="tick.mp3" preload="auto"></audio>
+    <audio id="sound-ganador" src="ganador.mp3" preload="auto"></audio>
+
+    <script>
+        // 🚨 CONFIGURACIÓN DE LA CONTRASEÑA 🚨
+        const CONTRASENA_ADMIN = "190323"; 
+
+        const ticSound = document.getElementById('sound-tic');
+        const ganadorSound = document.getElementById('sound-ganador');
+
+        let datosParticipantes = {};
+        let administradorAutenticado = false; 
+        
+        let currentBoletoNumero = null; 
+        
+        // VARIABLE DE ESTADO PARA EL SORTEO MANUAL
+        // 0: Listo para el Primer Ganador, 1: Esperando Segundo Ganador, 2: Sorteo Terminado
+        let estadoSorteo = 0; 
+        let primerGanadorNum = null; 
+        let boletosOcupadosGlobal = [];
+
+        function playTicSound() {
+            if (ticSound) {
+                ticSound.currentTime = 0; 
+                ticSound.play().catch(e => {
+                    console.warn("No se pudo reproducir el sonido 'tick'.", e);
+                });
+            }
+        }
+        
+        function playGanadorSound() {
+            if (ganadorSound) {
+                ganadorSound.currentTime = 0; 
+                ganadorSound.play().catch(e => {
+                    console.warn("No se pudo reproducir el sonido 'ganador'.", e);
+                });
+            }
+        }
+
+        function getNombreGanador(numeroBoleto) {
+            const datosGanador = datosParticipantes[numeroBoleto] || {nombre: 'el participante', apellido: ''};
+            return `${datosGanador.nombre || ''} ${datosGanador.apellido || ''}`.trim() || 'el participante';
+        }
+
+        function anunciarGanador(numeroBoleto, puesto, esFinal) {
+            if (!('speechSynthesis' in window)) {
+                console.warn("La síntesis de voz no está soportada por este navegador.");
+                return;
+            }
+            
+            const synth = window.speechSynthesis;
+            synth.cancel(); 
+
+            const nombreGanador = getNombreGanador(numeroBoleto);
+            
+            let textoAnuncio;
+            if (esFinal) {
+                 textoAnuncio = `¡Sorteo finalizado! El segundo ganador es el boleto número ${numeroBoleto}, correspondiente a ${nombreGanador}.`;
+            } else {
+                 textoAnuncio = `¡Felicidades! El primer ganador es el boleto número ${numeroBoleto}, correspondiente a ${nombreGanador}.`;
+            }
+            
+            const utterance = new SpeechSynthesisUtterance(textoAnuncio);
+            utterance.lang = 'es-ES';
+
+            function setFemaleVoice() {
+                const voices = synth.getVoices();
+                let vozFemenina = null;
+                let vozEspanolRespaldo = null;
+                const femaleNames = ['monica', 'laura', 'samantha', 'sofia', 'eva', 'ana', 'female'];
+
+                for (let i = 0; i < voices.length; i++) {
+                    const voiceName = voices[i].name.toLowerCase();
+                    if (voices[i].lang.startsWith('es')) { 
+                        if (femaleNames.some(name => voiceName.includes(name))) {
+                            vozFemenina = voices[i];
+                            break; 
+                        }
+                        if (!vozEspanolRespaldo) {
+                            vozEspanolRespaldo = voices[i];
+                        }
+                    }
+                }
+
+                if (vozFemenina) {
+                    utterance.voice = vozFemenina;
+                } else if (vozEspanolRespaldo) {
+                    utterance.voice = vozEspanolRespaldo;
+                }
+                
+                synth.speak(utterance);
+            }
+
+            if (synth.getVoices().length === 0) {
+                synth.onvoiceschanged = setFemaleVoice;
+            } else {
+                setFemaleVoice();
+            }
+        }
+
+        function iniciarContadorRegresivo() {
+            const timerDisplay = document.getElementById('countdown-timer');
+            if (!timerDisplay) return; 
+
+            function actualizarContador() {
+                const ahora = new Date();
+                const diaSemanaActual = ahora.getDay(); 
+                let diasHastaDomingo = 0;
+                
+                if (diaSemanaActual !== 0) {
+                    diasHastaDomingo = 7 - diaSemanaActual;
+                }
+                
+                const fechaObjetivo = new Date(ahora);
+                fechaObjetivo.setDate(ahora.getDate() + diasHastaDomingo); 
+                fechaObjetivo.setHours(19, 0, 0, 0); 
+
+                if (fechaObjetivo.getTime() < ahora.getTime()) {
+                    fechaObjetivo.setDate(fechaObjetivo.getDate() + 7);
+                }
+
+                const diferencia = fechaObjetivo.getTime() - ahora.getTime();
+
+                const segundos = Math.floor(diferencia / 1000);
+                const minutos = Math.floor(segundos / 60);
+                const horas = Math.floor(minutos / 60);
+                const dias = Math.floor(horas / 24);
+
+                const horasRestantes = horas % 24;
+                const minutosRestantes = minutos % 60;
+                const segundosRestantes = segundos % 60;
+
+                if (diferencia <= 0) {
+                    timerDisplay.textContent = "🎉 ¡EL SORTEO ESTÁ EN CURSO O HA FINALIZADO! 🎉";
+                } else {
+                    timerDisplay.innerHTML = `
+                        Próximo Sorteo: Domingo 7:00 PM<br>
+                        Faltan: 
+                        **${dias}** Días, 
+                        **${horasRestantes.toString().padStart(2, '0')}** Horas, 
+                        **${minutosRestantes.toString().padStart(2, '0')}** Minutos, 
+                        **${segundosRestantes.toString().padStart(2, '0')}** Segundos
+                    `;
+                }
+            }
+
+            actualizarContador();
+            setInterval(actualizarContador, 1000);
+        }
+        
+        function solicitarAccesoAdmin() {
+            if (administradorAutenticado) {
+                alert("Ya tienes acceso de administrador.");
+                return;
+            }
+
+            const password = prompt("🚨 INGRESA LA CONTRASEÑA DE ADMINISTRADOR para activar las funciones de Sorteo y Reinicio:");
+
+            if (password === CONTRASENA_ADMIN) {
+                administradorAutenticado = true;
+                alert("Acceso de administrador concedido. Funciones de Sorteo y Reinicio activadas.");
+                
+                document.getElementById('boton-sorteo').disabled = false;
+                document.getElementById('boton-reiniciar-boletos').disabled = false;
+                document.getElementById('boton-reiniciar-ganadores').disabled = false; 
+                
+                document.getElementById('boton-acceso-admin').style.display = 'none';
+                
+                // Reiniciar el botón al estado inicial al conceder acceso
+                document.getElementById('boton-sorteo').textContent = "🏆 ELEGIR 1er GANADOR 🏆";
+
+                document.getElementById('tablero').classList.remove('bloqueo-interaccion');
+
+            } else {
+                alert("Contraseña incorrecta. Las funciones de administración permanecen bloqueadas.");
+            }
+        }
+        
+        // --- FUNCIONES DEL MODAL ---
+        function mostrarModal(numero, esAdmin) {
+            currentBoletoNumero = numero;
+            const datos = datosParticipantes[numero] || {};
+            const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
+            
+            document.getElementById('modal-titulo').textContent = `Datos del Boleto #${numero}`;
+            
+            if (!esAdmin && divBoleto.classList.contains('ocupado')) {
+                return;
+            }
+
+            document.getElementById('modal-nombre').value = datos.nombre || '';
+            document.getElementById('modal-apellido').value = datos.apellido || '';
+            document.getElementById('modal-telefono').value = datos.telefono || '';
+            document.getElementById('modal-referencia').value = datos.referencia || '';
+
+            document.getElementById('datosModal').style.display = 'block';
+        }
+
+        function ocultarModal() {
+            document.getElementById('datosModal').style.display = 'none';
+            currentBoletoNumero = null;
+        }
+
+        function guardarDatosModal() {
+            if (!currentBoletoNumero) return;
+            
+            const nombre = document.getElementById('modal-nombre').value.trim();
+            const apellido = document.getElementById('modal-apellido').value.trim();
+            const telefono = document.getElementById('modal-telefono').value.trim();
+            const referencia = document.getElementById('modal-referencia').value.trim();
+            
+            const divBoleto = document.querySelector(`.boleto[data-numero="${currentBoletoNumero}"]`);
+            const nombreDisplay = divBoleto.querySelector('.nombre-display');
+            
+            if (nombre === '') {
+                // Si el nombre está vacío
+                if (administradorAutenticado) {
+                    // El admin puede LIBERAR el boleto (borrar datos)
+                    liberarBoleto(currentBoletoNumero, divBoleto, nombreDisplay);
+                    ocultarModal(); 
+                    return;
+                } else {
+                    // El público debe ingresar un nombre
+                    alert("Debes ingresar tu nombre para reservar el boleto.");
+                    return; 
+                }
+            } else {
+                // Hay nombre, se marca como ocupado
+                marcarBoleto(currentBoletoNumero, divBoleto, nombreDisplay, nombre, apellido, telefono, referencia);
+                ocultarModal(); 
+            }
+        }
+
+        function marcarBoleto(numero, divBoleto, nombreDisplay, nombre, apellido, telefono, referencia) {
+            divBoleto.classList.remove('disponible');
+            divBoleto.classList.add('ocupado');
+            estadoBoletos[numero] = 'ocupado';
+            
+            datosParticipantes[numero] = { nombre, apellido, telefono, referencia };
+            localStorage.setItem('datosRifaBoletosV2', JSON.stringify(datosParticipantes));
+            
+            const nombreCompletoDisplay = `${nombre} ${apellido}`.trim();
+            nombreDisplay.textContent = nombreCompletoDisplay;
+
+            localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
+            actualizarContador();
+        }
+
+        function liberarBoleto(numero, divBoleto, nombreDisplay) {
+            if (!administradorAutenticado) return; 
+
+            if (divBoleto.classList.contains('ocupado')) {
+                divBoleto.classList.remove('ocupado');
+                divBoleto.classList.add('disponible');
+                estadoBoletos[numero] = 'disponible';
+                
+                datosParticipantes[numero] = {};
+                localStorage.removeItem('datosRifaBoletosV2'); 
+                localStorage.setItem('datosRifaBoletosV2', JSON.stringify(datosParticipantes));
+                nombreDisplay.textContent = ''; 
+                
+                localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
+                actualizarContador();
+            }
+        }
+
+        // --- FIN FUNCIONES MODAL ---
+
+        function iniciarRifaAdministrador() {
+            const tablero = document.getElementById('tablero');
+            const contadorDisplay = document.getElementById('contador');
+            const resultadoDisplay = document.getElementById('resultado-sorteo');
+            const botonSorteo = document.getElementById('boton-sorteo');
+            const botonReiniciarBoletos = document.getElementById('boton-reiniciar-boletos'); 
+            const botonReiniciarGanadores = document.getElementById('boton-reiniciar-ganadores'); 
+            const totalBoletos = 200; 
+            const storageKey = 'estadoRifaBoletosV2';
+            const dataStorageKey = 'datosRifaBoletosV2';
+
+            let intervaloRuleta = null;
+            const duracionAnimacionPorGanador = 3000; 
+            const intervaloFlash = 80;
+
+            estadoBoletos = JSON.parse(localStorage.getItem(storageKey)) || {};
+            datosParticipantes = JSON.parse(localStorage.getItem(dataStorageKey)) || {};
+            
+            let ganadoresElegidos = [];
+            
+            // Inicializar texto del botón de sorteo
+            if (administradorAutenticado) {
+                 botonSorteo.textContent = "🏆 ELEGIR 1er GANADOR 🏆";
+                 botonReiniciarGanadores.disabled = false;
+            } else {
+                 botonSorteo.textContent = "🏆 ELEGIR 2 GANADORES AL AZAR 🏆"; // Mensaje por defecto antes de login
+                 botonReiniciarGanadores.disabled = true;
+            }
+
+
+            function actualizarContador() {
+                let seleccionados = 0;
+                for (let i = 1; i <= totalBoletos; i++) {
+                    const numero = i.toString();
+                    if (estadoBoletos[numero] === 'ocupado') {
+                        seleccionados++;
+                    }
+                }
+                contadorDisplay.textContent = `Boletos Seleccionados: ${seleccionados} / ${totalBoletos}`;
+                
+                if (administradorAutenticado) {
+                    if (estadoSorteo === 0) {
+                        botonSorteo.disabled = seleccionados < 2; 
+                    } else if (estadoSorteo === 1) {
+                         botonSorteo.disabled = (seleccionados - 1) < 1; 
+                    } else {
+                         botonSorteo.disabled = true;
+                    }
+                }
+            }
+            
+            // 🚨 FUNCIÓN DE REINICIO SUAVE DE BOLETOS 🚨
+            function reiniciarBoletos() {
+                if (!administradorAutenticado) {
+                    solicitarAccesoAdmin(); 
+                    return; 
+                }
+                
+                if (!confirm("¿Estás seguro de que quieres REINICIAR SOLO LOS BOLETOS? Esto los marcará a todos como DISPONIBLES y BORRARÁ los nombres de los participantes (los datos de los ganadores se conservarán en pantalla hasta un nuevo sorteo).")) {
+                    return; 
+                }
+                
+                // 1. Limpiar el estado de todos los boletos en memoria/storage (iterando hasta 200)
+                for (let i = 1; i <= totalBoletos; i++) {
+                    const numero = i.toString();
+                    estadoBoletos[numero] = 'disponible';
+                    datosParticipantes[numero] = {};
+                    
+                    // 2. Limpiar el DOM visualmente
+                    const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
+                    if (divBoleto) {
+                        divBoleto.classList.remove('ocupado', 'ganador');
+                        divBoleto.classList.add('disponible');
+                        divBoleto.querySelector('.nombre-display').textContent = ''; 
+                    }
+                }
+                
+                // 3. Guardar el estado limpio en localStorage
+                localStorage.setItem(storageKey, JSON.stringify(estadoBoletos));
+                localStorage.setItem(dataStorageKey, JSON.stringify(datosParticipantes));
+                
+                // 4. Resetear el estado del sorteo (se llama a la función para limpieza de ganadores)
+                reiniciarGanadoresSoft();
+                
+                // 5. Resetear el control y el contador
+                document.getElementById('boton-sorteo').textContent = "🏆 ELEGIR 1er GANADOR 🏆";
+                document.getElementById('boton-sorteo').disabled = true; // No hay boletos ocupados al reiniciar todo
+                resultadoDisplay.textContent = "Boletos y resultados reiniciados. Presiona el botón para realizar un nuevo sorteo.";
+                actualizarContador(); 
+
+                alert("¡Boletos reiniciados con éxito!");
+            }
+            
+            // 🚨 FUNCIÓN DE REINICIO SUAVE DE GANADORES (Lógica interna) 🚨
+            function reiniciarGanadoresSoft() {
+                // 1. Limpiar el estado interno del sorteo
+                estadoSorteo = 0;
+                primerGanadorNum = null;
+                boletosOcupadosGlobal = []; 
+                
+                // 2. Limpiar el DOM de la interfaz de resultados
+                
+                // Quitar el estado 'ganador' de los boletos en el tablero
+                document.querySelectorAll('.ganador').forEach(el => el.classList.remove('ganador'));
+                
+                // Limpiar los recuadros fijos
+                document.getElementById('display-ganador-1').innerHTML = `1er Ganador: N/A`;
+                document.getElementById('display-ganador-2').innerHTML = `2do Ganador: N/A`;
+
+                // Resetear el botón de Sorteo y el texto de resultado
+                document.getElementById('boton-sorteo').textContent = "🏆 ELEGIR 1er GANADOR 🏆";
+                document.getElementById('boton-sorteo').disabled = false;
+                document.getElementById('resultado-sorteo').textContent = "Resultados de Ganadores reiniciados. Presiona el botón para realizar un nuevo sorteo con los boletos existentes.";
+                
+                actualizarContador();
+            }
+
+            // 🚨 FUNCIÓN PARA EL BOTÓN AZUL (Llamando a la lógica Soft) 🚨
+            function reiniciarGanadores() {
+                if (!administradorAutenticado) {
+                    solicitarAccesoAdmin(); 
+                    return; 
+                }
+
+                if (!confirm("¿Estás seguro de que quieres REINICIAR SOLO LOS GANADORES? Esto eliminará los resultados del sorteo actual y dejará los boletos OCUPADOS intactos para un nuevo sorteo.")) {
+                    return; 
+                }
+                
+                reiniciarGanadoresSoft();
+                alert("¡Resultados de Ganadores reiniciados con éxito!");
+            }
+
+
+            // 3. Función para animar y revelar un ganador (se mantiene la base)
+            function animarGanador(boletosDisp, puesto, esSegundo) {
+                return new Promise(resolve => {
+                    let lastFlashedDiv = null;
+                    const numeroGanador = boletosDisp[Math.floor(Math.random() * boletosDisp.length)];
+                    
+                    // Iniciar animación
+                    intervaloRuleta = setInterval(() => {
+                        if (lastFlashedDiv) {
+                            lastFlashedDiv.classList.remove('ruleta-flash');
+                        }
+
+                        const randomFlashedIndex = Math.floor(Math.random() * boletosDisp.length);
+                        const numeroRandomFlashed = boletosDisp[randomFlashedIndex];
+                        
+                        const currentDivToFlash = document.querySelector(`.boleto[data-numero="${numeroRandomFlashed}"]`);
+                        
+                        if (currentDivToFlash) {
+                            currentDivToFlash.classList.add('ruleta-flash');
+                            lastFlashedDiv = currentDivToFlash;
+                            playTicSound();
+                        }
+                    }, intervaloFlash); 
+
+                    // Detener animación y revelar
+                    setTimeout(() => {
+                        clearInterval(intervaloRuleta);
+                        if (lastFlashedDiv) {
+                            lastFlashedDiv.classList.remove('ruleta-flash');
+                        }
+
+                        playGanadorSound();
+                        
+                        const divGanador = document.querySelector(`.boleto[data-numero="${numeroGanador}"]`);
+                        if (divGanador) {
+                            divGanador.classList.add('ganador');
+                        }
+                        
+                        // LÓGICA DE ACTUALIZACIÓN DEL RECUADRO FIJO
+                        const nombreCompletoGanador = getNombreGanador(numeroGanador);
+                        const displayId = (puesto === 1) ? 'display-ganador-1' : 'display-ganador-2';
+                        const colorPuesto = (puesto === 1) ? '#ffc107' : '#007bff';
+                        
+                        document.getElementById(displayId).innerHTML = `
+                            <span style="color: ${colorPuesto};">**${puesto}er Ganador:**</span> 
+                            **Boleto #${numeroGanador}**
+                            <br>
+                            **Nombre:** ${nombreCompletoGanador}
+                        `;
+                        
+                        resolve(numeroGanador); 
+                    }, duracionAnimacionPorGanador);
+                });
+            }
+
+
+            function realizarSorteo() {
+                if (!administradorAutenticado) {
+                    solicitarAccesoAdmin(); 
+                    return; 
+                }
+                
+                // Asegurarse de limpiar animaciones previas
+                document.querySelectorAll('.ganador').forEach(el => el.classList.remove('ganador'));
+                document.querySelectorAll('.ruleta-flash').forEach(el => el.classList.remove('ruleta-flash')); 
+                
+                const boletosOcupados = [];
+                for (let i = 1; i <= totalBoletos; i++) { 
+                    const numero = i.toString();
+                    if (estadoBoletos[numero] === 'ocupado') {
+                        boletosOcupados.push(numero);
+                    }
+                }
+                boletosOcupadosGlobal = boletosOcupados; 
+
+                // --- ESTADO 0: Elegir el Primer Ganador ---
+                if (estadoSorteo === 0) {
+                    if (boletosOcupadosGlobal.length < 2) {
+                        resultadoDisplay.innerHTML = "⚠️ **Se necesitan al menos 2 boletos ocupados para el sorteo de dos premios.**";
+                        botonSorteo.disabled = true;
+                        return;
+                    }
+                    
+                    botonSorteo.disabled = true;
+                    botonReiniciarBoletos.disabled = true;
+                    botonReiniciarGanadores.disabled = true;
+                    resultadoDisplay.textContent = "¡Girando la Ruleta por el Primer Ganador...!";
+                    
+                    // Limpiar el 2do recuadro
+                    document.getElementById('display-ganador-2').innerHTML = `<span style="color: #007bff;">2do Ganador:</span> Girando...`;
+                    
+                    animarGanador(boletosOcupadosGlobal, 1, false)
+                        .then(ganadorNum => {
+                            primerGanadorNum = ganadorNum;
+                            estadoSorteo = 1; // Pasamos al estado de espera
+                            botonSorteo.textContent = "🏆 ELEGIR 2do GANADOR 🏆";
+                            botonSorteo.disabled = false;
+                            botonReiniciarBoletos.disabled = false;
+                            botonReiniciarGanadores.disabled = false;
+                            resultadoDisplay.textContent = `🥇 ¡Primer Ganador Elegido! Pulsa "ELEGIR 2do GANADOR" para continuar.`;
+                            anunciarGanador(primerGanadorNum, 1, false);
+                        });
+                        
+                // --- ESTADO 1: Elegir el Segundo Ganador ---
+                } else if (estadoSorteo === 1) {
+                    
+                    botonSorteo.disabled = true;
+                    botonReiniciarBoletos.disabled = true;
+                    botonReiniciarGanadores.disabled = true;
+                    resultadoDisplay.textContent = "¡Girando la Ruleta por el Segundo Ganador...!";
+
+                    // Filtramos el array global para excluir al primer ganador
+                    const boletosSegundoSorteo = boletosOcupadosGlobal.filter(num => num !== primerGanadorNum);
+                    
+                    if (boletosSegundoSorteo.length === 0) {
+                        resultadoDisplay.innerHTML = `⚠️ Solo había un boleto ocupado (Boleto #${primerGanadorNum}). No hay segundo ganador.`;
+                        estadoSorteo = 2; 
+                        botonSorteo.disabled = true;
+                        botonReiniciarBoletos.disabled = false;
+                        botonReiniciarGanadores.disabled = false;
+                        return;
+                    }
+
+                    animarGanador(boletosSegundoSorteo, 2, true)
+                        .then(segundoGanadorNum => {
+                            estadoSorteo = 2; // Sorteo terminado
+                            
+                            const nombrePrimerGanador = getNombreGanador(primerGanadorNum);
+                            const nombreSegundoGanador = getNombreGanador(segundoGanadorNum);
+                            
+                            resultadoDisplay.innerHTML = `
+                                <p style="text-align: center; font-size: 1.5em; margin-bottom: 5px;">¡🎉 **SORTEO FINALIZADO** 🎉</p>
+                                <strong>🥇 PRIMER GANADOR: 
+                                    <span style="color: #ffc107;">Boleto #${primerGanadorNum}</span> - ${nombrePrimerGanador}
+                                </strong>
+                                <strong>🥈 SEGUNDO GANADOR: 
+                                    <span style="color: #007bff;">Boleto #${segundoGanadorNum}</span> - ${nombreSegundoGanador}
+                                </strong>
+                            `;
+                            
+                            anunciarGanador(segundoGanadorNum, 2, true); 
+
+                            botonSorteo.textContent = "✅ SORTEO COMPLETO ✅";
+                            botonSorteo.disabled = true;
+                            botonReiniciarBoletos.disabled = false;
+                            botonReiniciarGanadores.disabled = false;
+                        });
+
+                // --- ESTADO 2: Sorteo Terminado ---
+                } else if (estadoSorteo === 2) {
+                    resultadoDisplay.textContent = "El sorteo ya ha finalizado. Pulsa 'REINICIAR GANADORES' o 'REINICIAR BOLETOS' para comenzar uno nuevo.";
+                }
+            }
+
+            document.getElementById('boton-acceso-admin').addEventListener('click', solicitarAccesoAdmin);
+            botonSorteo.addEventListener('click', realizarSorteo);
+            botonReiniciarBoletos.addEventListener('click', reiniciarBoletos); 
+            botonReiniciarGanadores.addEventListener('click', reiniciarGanadores); 
+            document.getElementById('modal-btn-aceptar').addEventListener('click', guardarDatosModal);
+            document.getElementById('modal-btn-cancelar').addEventListener('click', ocultarModal);
+
+
+            // 🏗️ CÓDIGO DE GENERACIÓN DE BOLETOS 🏗️
+            for (let i = 1; i <= totalBoletos; i++) {
+                const numero = i.toString();
+                const estadoInicial = estadoBoletos[numero] || 'disponible'; 
+                const datosIniciales = datosParticipantes[numero] || {};
+                
+                const nombreMostrar = `${datosIniciales.nombre || ''} ${datosIniciales.apellido || ''}`.trim(); 
+
+                const divBoleto = document.createElement('div');
+                divBoleto.classList.add('boleto', estadoInicial);
+                divBoleto.setAttribute('data-numero', numero);
+
+                const numeroBtn = document.createElement('div');
+                numeroBtn.textContent = numero;
+                numeroBtn.classList.add('numero-btn'); 
+                divBoleto.appendChild(numeroBtn);
+                
+                const nombreDisplay = document.createElement('div');
+                nombreDisplay.classList.add('nombre-display');
+                nombreDisplay.textContent = nombreMostrar;
+                divBoleto.appendChild(nombreDisplay);
+
+
+                // Lógica de clic: 
+                numeroBtn.addEventListener('click', function() {
+                    if (intervaloRuleta) {
+                        return; 
+                    }
+                    
+                    document.querySelectorAll('.ganador').forEach(el => el.classList.remove('ganador'));
+                    resultadoDisplay.innerHTML = "Presiona el botón para realizar el sorteo.";
+                    
+                    const esOcupado = divBoleto.classList.contains('ocupado');
+                    
+                    if (esOcupado && !administradorAutenticado) {
+                        alert("Este boleto ya ha sido seleccionado y no se puede modificar públicamente.");
+                        return;
+                    }
+                    
+                    mostrarModal(numero, administradorAutenticado);
+                });
+
+                tablero.appendChild(divBoleto);
+            }
+            
+            actualizarContador();
+        }
+
+        window.onload = function() {
+            iniciarRifaAdministrador();
+            iniciarContadorRegresivo(); 
+        };
+    </script>
+    
+    <div id="contenido-administrador">
+        
+        <img src="Logotipo.jpg" alt="Logotipo Tu Rifa Online" id="logo-rifa">
+        
+        <div id="contador"></div> 
+        
+        <button id="boton-acceso-admin" class="boton-accion">🔑 ACCESO ADMIN (Sorteo/Reiniciar) 🔑</button>
+
+        <div id="contenedor-botones">
+            <button id="boton-sorteo" class="boton-accion" disabled>🏆 ELEGIR 2 GANADORES AL AZAR 🏆</button>
+            <button id="boton-reiniciar-ganadores" class="boton-accion" disabled>🔄 REINICIAR GANADORES 🔄</button> 
+            <button id="boton-reiniciar-boletos" class="boton-accion" disabled>🧹 REINICIAR BOLETOS 🧹</button>
+        </div>
+        
+        <div id="contenedor-ganadores-fijos">
+            <div id="display-ganador-1" class="display-ganador">1er Ganador: N/A</div>
+            <div id="display-ganador-2" class="display-ganador">2do Ganador: N/A</div>
+        </div>
+        
+        <div id="resultado-sorteo">Presiona el botón para realizar el sorteo.</div>
+
+        <div id="tablero">
+            </div>
+    </div>
+
+    <div id="countdown-timer"></div>
+    
+    <div id="datosModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-titulo">Datos del Boleto</h3>
+            
+            <label for="modal-nombre">Nombre: **(Obligatorio para reservar)**</label>
+            <input type="text" id="modal-nombre" placeholder="Nombre de la persona">
+            
+            <label for="modal-apellido">Apellido:</label>
+            <input type="text" id="modal-apellido" placeholder="Apellido de la persona">
+            
+            <label for="modal-telefono">Número de Teléfono:</label>
+            <input type="text" id="modal-telefono" placeholder="Ej: 555-1234567">
+            
+            <label for="modal-referencia">Número de Referencia:</label>
+            <input type="text" id="modal-referencia" placeholder="Ej: Pago, Zelle, Transferencia">
+
+            <div class="modal-footer">
+                <button id="modal-btn-cancelar">Cerrar</button> 
+                <button id="modal-btn-aceptar">Aceptar</button>
+            </div>
+        </div>
+    </div>
+    </body>
+</html>
