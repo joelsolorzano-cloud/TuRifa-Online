@@ -401,7 +401,7 @@
         </div>
         
         <div id="tablero">
-            </div>
+        </div>
     </div>
     
     <div id="datosModal" class="modal">
@@ -437,17 +437,24 @@
         const ticSound = document.getElementById('sound-tic');
         const ganadorSound = document.getElementById('sound-ganador');
 
+        // **********************************************
+        // 🛑 VARIABLES GLOBALES CORREGIDAS 🛑
+        // Estas deben ser globales para que actualizarContador() las vea.
         let datosParticipantes = {};
         let estadoBoletos = {}; 
         let administradorAutenticado = false;  
-        
         let currentBoletoNumero = null;  
         
-        // VARIABLE DE ESTADO PARA EL SORTEO MANUAL
-        // 0: Listo para el Primer Ganador, 1: Esperando Segundo Ganador, 2: Sorteo Terminado
         let estadoSorteo = 0;  
         let primerGanadorNum = null;  
         let boletosOcupadosGlobal = [];
+        
+        // Declaración global para los elementos del DOM y el total
+        let contadorDisplay; 
+        let botonSorteo;
+        let totalBoletos = 200; // Asignación de valor predeterminado
+        // **********************************************
+
 
         function playTicSound() {
             if (ticSound) {
@@ -601,6 +608,7 @@
             } else {
                 alert("Contraseña incorrecta. Las funciones de administración permanecen bloqueadas.");
             }
+            // Llama a actualizarContador para reflejar el estado correcto de los botones del admin
             actualizarContador(); 
         }
         
@@ -662,6 +670,8 @@
         function marcarBoleto(numero, divBoleto, nombreDisplay, nombre, apellido, telefono, referencia) {
             divBoleto.classList.remove('disponible');
             divBoleto.classList.add('ocupado');
+            
+            // 🛑 CRUCIAL: Se establece el estado de ocupado
             estadoBoletos[numero] = 'ocupado';
             
             datosParticipantes[numero] = { nombre, apellido, telefono, referencia };
@@ -671,7 +681,9 @@
             nombreDisplay.textContent = nombreCompletoDisplay;
 
             localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
-            actualizarContador();
+            
+            // Llama a la función para recalcular y mostrar el nuevo conteo
+            actualizarContador(); 
         }
 
         function liberarBoleto(numero, divBoleto, nombreDisplay) {
@@ -680,26 +692,67 @@
             if (divBoleto.classList.contains('ocupado')) {
                 divBoleto.classList.remove('ocupado');
                 divBoleto.classList.add('disponible');
+                
+                // 🛑 CRUCIAL: Se establece el estado de disponible
                 estadoBoletos[numero] = 'disponible';
                 
                 datosParticipantes[numero] = {};
-                localStorage.removeItem('datosRifaBoletosV2');  
+                // Se elimina la clave para evitar errores y se guarda el objeto limpio
+                localStorage.removeItem('datosRifaBoletosV2'); 
                 localStorage.setItem('datosRifaBoletosV2', JSON.stringify(datosParticipantes));
                 nombreDisplay.textContent = '';  
                 
                 localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
+                
+                // Llama a la función para recalcular y mostrar el nuevo conteo
                 actualizarContador();
             }
         }
 
         // --- FIN FUNCIONES MODAL ---
+        
+        // 🛑 FUNCIÓN DE ACTUALIZACIÓN DEL CONTADOR (Ahora global y con control) 🛑
+        function actualizarContador() {
+            // Asegúrate de que las variables del DOM estén inicializadas antes de intentar usarlas
+            if (!contadorDisplay || !botonSorteo || totalBoletos === undefined) {
+                // Si no están listas, intenta inicializarlas de nuevo si es necesario
+                // Esto se hace en iniciarRifaAdministrador(), pero es un chequeo de seguridad.
+                return;
+            }
+
+            let seleccionados = 0;
+            for (let i = 1; i <= totalBoletos; i++) {
+                const numero = i.toString();
+                if (estadoBoletos[numero] === 'ocupado') {
+                    seleccionados++;
+                }
+            }
+            contadorDisplay.textContent = `Boletos Seleccionados: ${seleccionados} / ${totalBoletos}`;
+            
+            // Lógica para habilitar/deshabilitar el botón de sorteo
+            if (administradorAutenticado) {
+                if (estadoSorteo === 0) {
+                    botonSorteo.disabled = seleccionados < 2;  
+                } else if (estadoSorteo === 1) {
+                     botonSorteo.disabled = (seleccionados - 1) < 1;  
+                } else {
+                     botonSorteo.disabled = true;
+                }
+            } else {
+                botonSorteo.disabled = true;
+            }
+        }
+
 
         function iniciarRifaAdministrador() {
+            // 🛑 Inicialización de variables globales del DOM 🛑
+            contadorDisplay = document.getElementById('contador'); 
+            botonSorteo = document.getElementById('boton-sorteo'); 
             const tablero = document.getElementById('tablero');
-            const contadorDisplay = document.getElementById('contador');
             const resultadoDisplay = document.getElementById('resultado-sorteo');
-            const botonSorteo = document.getElementById('boton-sorteo');
-            const totalBoletos = 200;  
+            
+            // totalBoletos ya es 200 globalmente.
+
             const storageKey = 'estadoRifaBoletosV2';
             const dataStorageKey = 'datosRifaBoletosV2';
 
@@ -726,31 +779,8 @@
             }
 
 
-            function actualizarContador() {
-                let seleccionados = 0;
-                for (let i = 1; i <= totalBoletos; i++) {
-                    const numero = i.toString();
-                    if (estadoBoletos[numero] === 'ocupado') {
-                        seleccionados++;
-                    }
-                }
-                contadorDisplay.textContent = `Boletos Seleccionados: ${seleccionados} / ${totalBoletos}`;
-                
-                if (administradorAutenticado) {
-                    if (estadoSorteo === 0) {
-                        botonSorteo.disabled = seleccionados < 2;  
-                    } else if (estadoSorteo === 1) {
-                         botonSorteo.disabled = (seleccionados - 1) < 1;  
-                    } else {
-                         botonSorteo.disabled = true;
-                    }
-                } else {
-                    botonSorteo.disabled = true;
-                }
-            }
-            
-            // 🚨 FUNCIÓN DE REINICIO SUAVE DE BOLETOS 🚨
-            function reiniciarBoletos() {
+            // 🚨 FUNCIÓN DE REINICIO SUAVE DE BOLETOS 🚨 (Mantenida como función global)
+            window.reiniciarBoletos = function() { 
                 if (!administradorAutenticado) {
                     solicitarAccesoAdmin();  
                     return;  
@@ -770,6 +800,7 @@
                     const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
                     if (divBoleto) {
                         divBoleto.classList.remove('ocupado', 'ganador');
+                        divBoleto.classList.remove('ruleta-flash'); // Limpieza extra
                         divBoleto.classList.add('disponible');
                         divBoleto.querySelector('.nombre-display').textContent = '';  
                     }
@@ -777,6 +808,7 @@
                 
                 // 3. Guardar el estado limpio en localStorage
                 localStorage.setItem(storageKey, JSON.stringify(estadoBoletos));
+                localStorage.removeItem(dataStorageKey);
                 localStorage.setItem(dataStorageKey, JSON.stringify(datosParticipantes));
                 
                 // 4. Resetear el estado del sorteo (se llama a la función para limpieza de ganadores)
@@ -831,7 +863,7 @@
             }
 
 
-            // 3. Función para animar y revelar un ganador (se mantiene la base)
+            // 3. Función para animar y revelar un ganador 
             function animarGanador(boletosDisp, puesto, esSegundo) {
                 return new Promise(resolve => {
                     let lastFlashedDiv = null;
@@ -1008,9 +1040,8 @@
             
             // Re-exportar las funciones a la ventana para que los botones onclick funcionen
             window.solicitarAccesoAdmin = solicitarAccesoAdmin;
-            window.reiniciarBoletos = reiniciarBoletos;  
-            // window.reiniciarGanadores ya se redefinió antes
-
+            window.iniciarSorteoManual = iniciarSorteoManual; 
+            
             // Inicializar contadores y temporizador
             actualizarContador();
             iniciarContadorRegresivo();
@@ -1019,6 +1050,5 @@
         // Inicia todo al cargar el DOM
         document.addEventListener('DOMContentLoaded', iniciarRifaAdministrador);
     </script>
-
 </body>
 </html>
