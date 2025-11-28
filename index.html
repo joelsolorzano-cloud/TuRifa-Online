@@ -77,21 +77,17 @@
     <div class="container">
         <h2>Selección de Boletos (API Flask)</h2>
         <div class="asientos-grid" id="asientos-container">
-            <!-- Los asientos se inyectarán aquí con JavaScript -->
-        </div>
+            </div>
         <div class="status-message" id="message-display">
             Haga clic en un asiento disponible para reservar.
         </div>
 
-        <!-- NUEVO: Área de la Reserva con Contador y Botón de Compra -->
         <div id="reserva-actual" style="margin-top: 20px; padding: 15px; border: 1px dashed #ccc; border-radius: 5px; text-align: center; display: none;">
             <p>Asiento reservado: <strong id="asiento-reservado-nombre"></strong>. <span id="contador"></span></p>
             <button id="btn-comprar" onclick="finalizarCompra()" style="background-color: #007bff; color: white; padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; margin-top: 10px;">
                 Finalizar Compra
             </button>
         </div>
-        <!-- FIN NUEVO -->
-
         <button onclick="cargarEstadoBoletos()" style="margin-top: 20px; padding: 10px 20px; cursor: pointer;">
             Recargar Estado
         </button>
@@ -209,7 +205,6 @@
                     // Reserva exitosa (Código 200)
                     
                     // CORRECCIÓN CLAVE: Busca el SEGUNDO número que aparece en el mensaje.
-                    // Esto es necesario porque el mensaje del servidor es similar a: 'Asiento A1 reservado... Tienes 30 segundos...'
                     const matches = data.message ? data.message.match(/\d+/g) : null;
                     const tiempoReserva = (matches && matches.length > 1) ? matches[1] : '30';
 
