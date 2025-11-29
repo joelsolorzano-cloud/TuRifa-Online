@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Tablero de Rifa</title>
+    <title>Tablero de Rifa - ACCESO ADMINISTRADOR</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -430,17 +430,36 @@
     <audio id="sound-tic" src="tick.mp3" preload="auto"></audio>
     <audio id="sound-ganador" src="ganador.mp3" preload="auto"></audio>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
     <script>
         // 🚨 CONFIGURACIÓN DE LA CONTRASEÑA 🚨
         const CONTRASENA_ADMIN = "190323";  
+
+        // 🔥 NUEVO: Configuración de Firebase (Proporcionada por el usuario)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZKDDSNcVQ1OUpjheDRJBeohvEwb1D8vU",
+            authDomain: "turifa-online.firebaseapp.com",
+            databaseURL: "https://turifa-online-default-rtdb.firebaseio.com",
+            projectId: "turifa-online",
+            storageBucket: "turifa-online.firebasestorage.app",
+            messagingSenderId: "38618229946",
+            appId: "1:38618229946:web:b3dd733ef4e3d0eb352683"
+        };
+
+        // 🔥 NUEVO: Inicializar Firebase y la referencia a la base de datos
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const refTickets = database.ref('rifa/tickets'); // Referencia al nodo principal
 
         const ticSound = document.getElementById('sound-tic');
         const ganadorSound = document.getElementById('sound-ganador');
 
         // **********************************************
-        // 🛑 VARIABLES GLOBALES CORREGIDAS 🛑
-        // Estas deben ser globales para que actualizarContador() las vea.
-        let datosParticipantes = {};
+        // 🛑 VARIABLES GLOBALES CORREGIDAS PARA TRABAJAR CON FIREBASE 🛑
+        // Estas variables se llenarán automáticamente con los datos de Firebase.
+        let datosParticipantes = {}; 
         let estadoBoletos = {}; 
         let administradorAutenticado = false;  
         let currentBoletoNumero = null;  
@@ -667,45 +686,57 @@
             }
         }
 
+        // 🔥 MODIFICADA: Ahora usa Firebase para guardar los datos.
         function marcarBoleto(numero, divBoleto, nombreDisplay, nombre, apellido, telefono, referencia) {
+            
+            // 🔥 NUEVO: Crear el objeto para guardar en Firebase
+            const ticketData = {
+                status: 'ocupado', // Estado de Firebase
+                nombre: nombre,
+                apellido: apellido,
+                telefono: telefono,
+                referencia: referencia
+            };
+
+            // 🔥 NUEVO: Escribir en la base de datos
+            refTickets.child(numero).set(ticketData)
+                .then(() => {
+                    console.log(`Boleto #${numero} marcado como ocupado en Firebase.`);
+                })
+                .catch((error) => {
+                    alert("Error al guardar el boleto. Revisa tu conexión y reglas de Firebase.");
+                    console.error(error);
+                });
+            
+            // Actualización visual inmediata (el listener lo confirmará)
             divBoleto.classList.remove('disponible');
             divBoleto.classList.add('ocupado');
             
-            // 🛑 CRUCIAL: Se establece el estado de ocupado
-            estadoBoletos[numero] = 'ocupado';
-            
-            datosParticipantes[numero] = { nombre, apellido, telefono, referencia };
-            localStorage.setItem('datosRifaBoletosV2', JSON.stringify(datosParticipantes));
-            
+            // Se actualiza el nombre en pantalla inmediatamente
             const nombreCompletoDisplay = `${nombre} ${apellido}`.trim();
             nombreDisplay.textContent = nombreCompletoDisplay;
-
-            localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
-            
-            // Llama a la función para recalcular y mostrar el nuevo conteo
-            actualizarContador(); 
         }
 
+        // 🔥 MODIFICADA: Ahora usa Firebase para liberar el boleto.
         function liberarBoleto(numero, divBoleto, nombreDisplay) {
             if (!administradorAutenticado) return;  
 
             if (divBoleto.classList.contains('ocupado')) {
+                
+                // 🔥 NUEVO: Marcarlo como 'disponible' en Firebase (eliminará el resto de datos)
+                refTickets.child(numero).set({ status: 'disponible' })
+                    .then(() => {
+                        console.log(`Boleto #${numero} liberado en Firebase.`);
+                    })
+                    .catch((error) => {
+                        alert("Error al liberar el boleto.");
+                        console.error(error);
+                    });
+
+                // Actualización visual inmediata (el listener lo confirmará)
                 divBoleto.classList.remove('ocupado');
                 divBoleto.classList.add('disponible');
-                
-                // 🛑 CRUCIAL: Se establece el estado de disponible
-                estadoBoletos[numero] = 'disponible';
-                
-                datosParticipantes[numero] = {};
-                // Se elimina la clave para evitar errores y se guarda el objeto limpio
-                localStorage.removeItem('datosRifaBoletosV2'); 
-                localStorage.setItem('datosRifaBoletosV2', JSON.stringify(datosParticipantes));
-                nombreDisplay.textContent = '';  
-                
-                localStorage.setItem('estadoRifaBoletosV2', JSON.stringify(estadoBoletos));
-                
-                // Llama a la función para recalcular y mostrar el nuevo conteo
-                actualizarContador();
+                nombreDisplay.textContent = '';
             }
         }
 
@@ -753,15 +784,11 @@
             
             // totalBoletos ya es 200 globalmente.
 
-            const storageKey = 'estadoRifaBoletosV2';
-            const dataStorageKey = 'datosRifaBoletosV2';
-
             let intervaloRuleta = null;
             const duracionAnimacionPorGanador = 3000;  
             const intervaloFlash = 80;
 
-            estadoBoletos = JSON.parse(localStorage.getItem(storageKey)) || {};
-            datosParticipantes = JSON.parse(localStorage.getItem(dataStorageKey)) || {};
+            // Se elimina la lógica de carga de localStorage, ahora Firebase lo maneja.
             
             let ganadoresElegidos = [];
             
@@ -780,6 +807,7 @@
 
 
             // 🚨 FUNCIÓN DE REINICIO SUAVE DE BOLETOS 🚨 (Mantenida como función global)
+            // 🔥 MODIFICADA: Ahora usa Firebase para limpiar.
             window.reiniciarBoletos = function() { 
                 if (!administradorAutenticado) {
                     solicitarAccesoAdmin();  
@@ -790,37 +818,33 @@
                     return;  
                 }
                 
-                // 1. Limpiar el estado de todos los boletos en memoria/storage (iterando hasta 200)
-                for (let i = 1; i <= totalBoletos; i++) {
-                    const numero = i.toString();
-                    estadoBoletos[numero] = 'disponible';
-                    datosParticipantes[numero] = {};
-                    
-                    // 2. Limpiar el DOM visualmente
-                    const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
-                    if (divBoleto) {
-                        divBoleto.classList.remove('ocupado', 'ganador');
-                        divBoleto.classList.remove('ruleta-flash'); // Limpieza extra
-                        divBoleto.classList.add('disponible');
-                        divBoleto.querySelector('.nombre-display').textContent = '';  
-                    }
-                }
-                
-                // 3. Guardar el estado limpio en localStorage
-                localStorage.setItem(storageKey, JSON.stringify(estadoBoletos));
-                localStorage.removeItem(dataStorageKey);
-                localStorage.setItem(dataStorageKey, JSON.stringify(datosParticipantes));
-                
-                // 4. Resetear el estado del sorteo (se llama a la función para limpieza de ganadores)
-                reiniciarGanadoresSoft();
-                
-                // 5. Resetear el control y el contador
-                document.getElementById('boton-sorteo').textContent = "🏆 ELEGIR 1er GANADOR 🏆";
-                resultadoDisplay.textContent = "Boletos y resultados reiniciados. Presiona el botón para realizar un nuevo sorteo.";
-                
-                actualizarContador();  
+                // 🔥 NUEVO: Usar Firebase para borrar TODOS los datos de los tickets
+                refTickets.set(null) // Esto borra todo lo que está bajo /rifa/tickets
+                    .then(() => {
+                        
+                        // 2. Limpiar el DOM visualmente de cualquier clase que no quite el listener 
+                        for (let i = 1; i <= totalBoletos; i++) {
+                            const numero = i.toString();
+                            const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
+                            if (divBoleto) {
+                                divBoleto.classList.remove('ganador', 'ruleta-flash'); 
+                            }
+                        }
 
-                alert("¡Boletos reiniciados con éxito!");
+                        // 3. Resetear el estado del sorteo
+                        reiniciarGanadoresSoft(); 
+                        
+                        // 4. Resetear el control y el texto de resultado
+                        document.getElementById('boton-sorteo').textContent = "🏆 ELEGIR 1er GANADOR 🏆";
+                        resultadoDisplay.textContent = "Boletos y resultados reiniciados. Presiona el botón para realizar un nuevo sorteo.";
+
+                        alert("¡Boletos reiniciados con éxito!");
+
+                    })
+                    .catch((error) => {
+                        alert("Error al intentar reiniciar los boletos en Firebase.");
+                        console.error(error);
+                    });
             }
             
             // 🚨 FUNCIÓN DE REINICIO SUAVE DE GANADORES (Lógica interna) 🚨
@@ -900,6 +924,8 @@
                         const divGanador = document.querySelector(`.boleto[data-numero="${numeroGanador}"]`);
                         if (divGanador) {
                             divGanador.classList.add('ganador');
+                            // Asegurarse de que no tenga la clase ocupado si es ganador
+                            divGanador.classList.remove('ocupado'); 
                         }
 
                         playGanadorSound();
@@ -925,7 +951,8 @@
                     boletosOcupadosGlobal = [];
                     for (let i = 1; i <= totalBoletos; i++) {
                         const numero = i.toString();
-                        if (estadoBoletos[numero] === 'ocupado') {
+                        // Se usa estadoBoletos que fue llenado por el listener de Firebase
+                        if (estadoBoletos[numero] === 'ocupado') { 
                             boletosOcupadosGlobal.push(numero);
                         }
                     }
@@ -1006,12 +1033,9 @@
             for (let i = 1; i <= totalBoletos; i++) {
                 const numero = i.toString();
                 
-                if (!estadoBoletos.hasOwnProperty(numero)) {
-                    estadoBoletos[numero] = 'disponible';
-                }
-
+                // 🔥 MODIFICADO: Solo creamos los divs, el listener de Firebase los pintará
                 const divBoleto = document.createElement('div');
-                divBoleto.className = `boleto ${estadoBoletos[numero]}`;
+                divBoleto.className = `boleto disponible`; // Clase inicial de respaldo
                 divBoleto.dataset.numero = numero;
 
                 const numeroBtn = document.createElement('div');
@@ -1020,13 +1044,8 @@
                 
                 const nombreDisplay = document.createElement('div');
                 nombreDisplay.className = 'nombre-display';
+                nombreDisplay.textContent = ''; // Limpiar el texto inicial
                 
-                if (estadoBoletos[numero] === 'ocupado' && datosParticipantes[numero]) {
-                     nombreDisplay.textContent = `${datosParticipantes[numero].nombre} ${datosParticipantes[numero].apellido}`.trim();
-                } else {
-                    nombreDisplay.textContent = '';  
-                }
-
                 divBoleto.appendChild(numeroBtn);
                 divBoleto.appendChild(nombreDisplay);
                 
@@ -1037,13 +1056,59 @@
                 
                 tablero.appendChild(divBoleto);
             }
-            
+
+            // 🔥 NUEVO: Configurar el Listener de Firebase (Carga de datos y actualización en tiempo real)
+            refTickets.on('value', (snapshot) => {
+                const tickets = snapshot.val() || {}; 
+                
+                // Reiniciamos los estados locales para el sorteo
+                datosParticipantes = {};
+                estadoBoletos = {};
+
+                for (let i = 1; i <= totalBoletos; i++) {
+                    const numero = i.toString();
+                    
+                    // Si no hay datos en Firebase, asumimos 'disponible'
+                    const ticketData = tickets[numero] || { status: 'disponible' }; 
+                    const divBoleto = document.querySelector(`.boleto[data-numero="${numero}"]`);
+                    
+                    // Si el elemento no existe, saltar (solo como chequeo de seguridad)
+                    if (!divBoleto) continue; 
+                    
+                    const nombreDisplay = divBoleto.querySelector('.nombre-display');
+
+                    // 1. Actualizar estados locales (datosParticipantes y estadoBoletos)
+                    estadoBoletos[numero] = ticketData.status;
+                    if (ticketData.status === 'ocupado') {
+                        datosParticipantes[numero] = ticketData;
+                    } else {
+                        datosParticipantes[numero] = {};
+                    }
+
+                    // 2. Actualizar el DOM (el color y el nombre)
+                    divBoleto.classList.remove('ocupado', 'disponible');
+                    // Solo actualizamos el estado si el boleto NO ha sido marcado como ganador
+                    if (!divBoleto.classList.contains('ganador')) {
+                       divBoleto.classList.add(ticketData.status);
+                    }
+                    
+                    if (ticketData.status === 'ocupado' && ticketData.nombre) {
+                        nombreDisplay.textContent = `${ticketData.nombre} ${ticketData.apellido || ''}`.trim();
+                    } else {
+                        nombreDisplay.textContent = '';
+                    }
+                }
+                
+                // 3. Actualizar el contador después de cargar todos los estados
+                actualizarContador(); 
+            });
+
+
             // Re-exportar las funciones a la ventana para que los botones onclick funcionen
             window.solicitarAccesoAdmin = solicitarAccesoAdmin;
             window.iniciarSorteoManual = iniciarSorteoManual; 
             
             // Inicializar contadores y temporizador
-            actualizarContador();
             iniciarContadorRegresivo();
         }
 
@@ -1052,4 +1117,3 @@
     </script>
 </body>
 </html>
-
